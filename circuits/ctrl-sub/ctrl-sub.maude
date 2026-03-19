@@ -1,0 +1,15 @@
+load ../ctrl-add/ctrl-add.maude
+
+fmod CTRL-SUB is
+    pr CTRL-ADD .
+    
+    --- ops signatures
+    op ctrl-sub : Nat NatList NatList Nat Nat -> Mat .
+
+    --- definition of add function
+    vars CTRL CARRY-OUT ANCILLA : Nat .
+    vars XL YL : NatList .
+
+    --- ctrl-sub: dagger of ctrl-add
+    eq [ctrl-sub] : ctrl-sub(CTRL, XL, YL, CARRY-OUT, ANCILLA) = (ctrl-add(CTRL, XL, YL, CARRY-OUT, ANCILLA))^+ .
+endfm

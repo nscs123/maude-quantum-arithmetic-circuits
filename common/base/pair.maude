@@ -1,0 +1,7 @@
+fmod PAIR{X :: TRIV} is
+    sort Pair{X} .
+
+    --- operators
+    op _:_ : X$Elt X$Elt -> Pair{X} [ctor].
+endfm
+

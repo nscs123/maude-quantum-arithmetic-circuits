@@ -1,0 +1,308 @@
+load ../qc.maude
+load ./views/view-bit.maude
+load ./base/list.maude
+
+fmod BITLIST is
+    pr QC .
+    pr NAT .
+    pr LIST{ViewBit} * (sort List{ViewBit} to BitList) .
+
+    --- operators
+    op _b+_ : BitList BitList -> BitList .
+    op _b+'_ : BitList BitList -> BitList [comm] .  --- internal helper for b+ (same length inputs, commutative)
+    op _b-_ : BitList BitList -> BitList .
+    op _b*_ : BitList BitList -> BitList .
+    op _b*'_ : BitList BitList -> BitList .  --- internal helper for b* (same length inputs)
+    op bmod+ : BitList BitList BitList -> BitList .
+    op bmod* : BitList BitList BitList -> BitList .
+    op bmod*-reduce : BitList BitList -> BitList .  --- helper for bmod*
+    --- bmod-exp: modular exponentiation (BL1 ^ BL2) mod BL3
+    op bmod-exp : BitList BitList BitList -> BitList .
+    op bmod-exp-helper : BitList BitList BitList BitList -> BitList .  --- (base, exp, mod, result)
+    --- bdiv: integer division (BL1 / BL2), returns quotient
+    op _bdiv_ : BitList BitList -> BitList .
+    op bdiv-helper : BitList BitList BitList -> BitList .
+    --- brem: remainder (BL1 mod BL2)
+    op _brem_ : BitList BitList -> BitList .
+    --- bmod-inv: modular multiplicative inverse (A^(-1) mod N) using EEA
+    op bmod-inv : BitList BitList -> BitList .
+    op eea-helper : BitList BitList BitList Bool BitList Bool BitList -> BitList .
+    op isAllZero : BitList -> Bool .
+    op ~_ : BitList -> BitList .
+    op not : Bit -> Bit .
+    op isZero : Bit -> Bool .
+    op isOne : Bit -> Bool .
+    op _<_ : BitList BitList -> Bool .
+    op _>=_ : BitList BitList -> Bool .
+
+    --- helper functions
+    op toBitList : Vect -> BitList [memo] .
+    op pad : BitList Nat Bit -> BitList [memo strat (1 0)].
+    op msb : BitList -> Bit .
+    op tailBits : Nat BitList -> BitList [memo strat (2 0)].
+
+    --- toBitList
+    var V : Vect .
+    eq toBitList(|0> (x) V) = 0 toBitList(V) .
+    eq toBitList(|1> (x) V) = 1 toBitList(V) .
+    eq toBitList(|0>) = 0 .
+    eq toBitList(|1>) = 1 .
+
+    --- variables
+    vars BL BL1 BL2 BL1a BL2a RES : BitList .
+    vars B B1 B2 : Bit .
+    var N : Nat .
+    var MOD : BitList .
+
+    --- <: less than (compare from MSB to LSB)
+    --- recursive case: multi-bit lists (single bit case uses Bit's < from bit.maude)
+    eq (B1 BL1) < (B2 BL2) = 
+        if B1 < B2 then true
+        else if B2 < B1 then false
+        else BL1 < BL2
+        fi fi .
+    
+    eq BL1 >= BL2 = not(BL1 < BL2) .
+
+    --- pad: pad with 0/1 
+    eq pad(BL, N, B) = if len(BL) < N then pad(B BL, N, B) else BL fi .
+
+    --- msb: most significant bit
+    eq msb(B) = B .
+    eq msb(B BL) = B .
+
+    --- tailBits: get the last N bits (drop MSBs if length > N)
+    eq tailBits(N, B) = B .
+    eq tailBits(N, B BL) = if N >= len(B BL) then B BL else tailBits(N, BL) fi .
+
+
+    --- not: bitwise NOT for single bit
+    eq not(0) = 1 .
+    eq not(1) = 0 .
+
+    --- isZero / isOne: bit to Bool conversion
+    eq isZero(0) = true .
+    eq isZero(1) = false .
+    eq isOne(0) = false .
+    eq isOne(1) = true .
+
+    --- isAllZero: check if all bits are zero
+    eq isAllZero(0) = true .
+    eq isAllZero(1) = false .
+    eq isAllZero(B BL) = isZero(B) and isAllZero(BL) .
+
+    --- ~: bitwise NOT operation
+    eq ~ B = not(B) .
+    eq ~ (B BL) = not(B) (~ BL) .
+
+    --- b+: binary addition (bit-by-bit with carry)
+    --- length of BL1 == len(BL2)
+    eq BL1 b+ BL2 = pad(BL1 b+' BL2, len(BL1) + 1, 0) .
+
+    --- b+': internal helper for b+ (same length inputs)
+    eq 0 b+' BL = BL .
+    eq 1 b+' 1 = 1 0 .
+    eq 1 b+' 0 = 0 1 .
+    eq 1 b+' (BL 0) = BL 1 .
+    eq 1 b+' (BL 1) = (BL b+' 1) 0 .
+    eq (BL1 B) b+' (BL2 0) = (BL1 b+' BL2) B .
+    eq (BL1 0) b+' (BL2 B) = (BL1 b+' BL2) B .
+    eq (BL1 1) b+' (BL2 1) = (BL1 b+' (BL2 b+' 1)) 0 .
+
+    --- b-: binary subtraction using 2's complement
+    --- A - B = A + (~B) + 1
+    eq BL1 b- BL2 = tailBits(len(BL2) + 1, (pad(BL1, len(BL1) + 1, 0) b+' ((~ pad(BL2, len(BL2) + 1, 0)) b+' 1))) .
+
+    --- b*: binary multiplication (ensures same length inputs, outputs 2n bits for n-bit inputs)
+    --- n-bit * n-bit = 2n-bit result
+    eq BL1 b* BL2 = 
+        if len(BL1) == len(BL2) then
+            tailBits(len(BL1) * 2, pad(BL1 b*' BL2, len(BL1) * 2, 0))
+        else
+            tailBits(max(len(BL1), len(BL2)) * 2, pad(pad(BL1, max(len(BL1), len(BL2)), 0) b*' pad(BL2, max(len(BL1), len(BL2)), 0), max(len(BL1), len(BL2)) * 2, 0))
+        fi .
+
+    --- b*': internal helper for b* (same length inputs, allows variable length result)
+    --- MSB-first representation: left shift means appending 0 to the right
+    eq 0 b*' BL = 0 .
+    eq 1 b*' BL = BL .
+    eq (BL1 0) b*' BL2 = (BL1 b*' BL2) 0 .
+    eq (BL1 1) b*' BL2 = BL2 b+ ((BL1 b*' BL2) 0) .
+
+    --- bmod+: modular addition (BL1 + BL2) mod MOD
+    *** Input: n-bit BL1, BL2, MOD (all same length)
+    *** Output: n-bit result of (BL1 + BL2) mod MOD
+    *** Precondition: BL1 < MOD and BL2 < MOD
+    *** If msb of (sum - MOD) is 1, then sum < MOD, so return sum
+    *** Otherwise sum >= MOD, so return (sum - MOD)
+    eq bmod+(BL1, BL2, MOD) = 
+        if isOne(msb((BL1 b+' BL2) b- MOD)) then 
+            tailBits(len(MOD), BL1 b+' BL2)
+        else 
+            bmod+((BL1 b+' BL2) b- MOD, pad(0, len(MOD), 0), MOD)
+        fi .
+    
+    --- bmod*: modular multiplication (BL1 * BL2) mod MOD
+    --- Input: n-bit BL1, BL2, MOD (same bit-lengths)
+    --- Output: n-bit result of (BL1 * BL2) mod MOD
+    --- Implementation: multiply first (getting 2n bits), then reduce modulo MOD
+    eq bmod*(BL1, BL2, MOD) = tailBits(len(MOD), bmod*-reduce(BL1 b* BL2, MOD)) .
+    
+    --- bmod*-reduce: reduce a potentially long result modulo MOD
+    --- This repeatedly subtracts MOD until result < MOD
+    op bmod*-reduce : BitList BitList -> BitList .
+    eq bmod*-reduce(BL, MOD) = 
+        if len(BL) < len(MOD) then
+            pad(BL, len(MOD), 0)
+        else if len(BL) == len(MOD) then
+            if BL < MOD then
+                BL
+            else
+                bmod*-reduce(tailBits(len(MOD), BL b- MOD), MOD)
+            fi
+        else if BL >= pad(MOD, len(BL), 0) then
+            bmod*-reduce(tailBits(len(BL), BL b- pad(MOD, len(BL), 0)), MOD)
+        else
+            bmod*-reduce(tailBits(len(MOD), BL), MOD)
+        fi fi fi .
+    
+    --- bmod-exp: modular exponentiation (base ^ exp) mod modulus
+    --- Input: n-bit base, exp, modulus (same bit-lengths)
+    --- Output: n-bit result of (base ^ exp) mod modulus
+    --- Special cases:
+    ---   - 0^0 mod N = 0 (by definition in this system)
+    ---   - x^0 mod N = 1 mod N (for x != 0)
+    --- Uses square-and-multiply algorithm (right-to-left binary method)
+    eq bmod-exp(BL1, BL2, MOD) = 
+        if isAllZero(BL2) then
+            --- exp == 0
+            if isAllZero(BL1) then
+                --- 0^0 = 0 (by definition)
+                pad(0, len(MOD), 0)
+            else
+                --- x^0 = 1 mod MOD
+                bmod*-reduce(pad(1, len(MOD), 0), MOD)
+            fi
+        else
+            bmod-exp-helper(BL1, BL2, MOD, pad(1, len(MOD), 0))
+        fi .
+    
+    --- bmod-exp-helper: (base, exp, mod, result)
+    --- Process exponent from LSB (rightmost bit) to MSB (leftmost bit)
+    eq bmod-exp-helper(BL1, B, MOD, RES) = 
+        if isOne(B) then
+            bmod*(RES, BL1, MOD)
+        else
+            RES
+        fi .
+    eq bmod-exp-helper(BL1, (BL2 B), MOD, RES) = 
+        bmod-exp-helper(
+            bmod*(BL1, BL1, MOD),
+            BL2,
+            MOD,
+            if isOne(B) then bmod*(RES, BL1, MOD) else RES fi
+        ) .
+    
+    --- bdiv: integer division using repeated subtraction
+    eq BL1 bdiv BL2 = 
+        if isAllZero(BL2) then
+            pad((0).Bit, len(BL1), (0).Bit)
+        else if BL1 < BL2 then
+            pad((0).Bit, len(BL1), (0).Bit)
+        else
+            bdiv-helper(BL1, BL2, pad((0).Bit, len(BL1), (0).Bit))
+        fi fi .
+    
+    eq bdiv-helper(BL1, BL2, RES) = 
+        if BL1 < BL2 then
+            RES
+        else
+            bdiv-helper(tailBits(len(BL2), BL1 b- BL2), BL2, 
+                tailBits(len(RES), RES b+' pad((0).Bit (1).Bit, len(RES), (0).Bit)))
+        fi .
+    
+    --- brem: remainder (BL1 mod BL2)
+    eq BL1 brem BL2 = 
+        if isAllZero(BL2) then
+            BL1
+        else
+            tailBits(len(BL2), bmod*-reduce(BL1, BL2))
+        fi .
+    
+    --- bmod-inv: modular multiplicative inverse using Extended Euclidean Algorithm
+    --- Returns A^(-1) mod N such that A * A^(-1) ≡ 1 (mod N)
+    --- Precondition: gcd(A, N) = 1
+    vars T TNEW NMOD : BitList .
+    vars TNEG TNEWNEG : Bool .
+    
+    eq bmod-inv(BL1, MOD) = 
+        if isAllZero(BL1) then
+            pad((0).Bit, len(MOD), (0).Bit)
+        else
+            eea-helper(
+                MOD,
+                bmod*-reduce(BL1, MOD),
+                pad((0).Bit, len(MOD), (0).Bit),
+                false,
+                pad((0).Bit (1).Bit, len(MOD), (0).Bit),
+                false,
+                MOD
+            )
+        fi .
+    
+    --- eea-helper: (r, r_new, t, t_neg, t_new, t_new_neg, n)
+    eq eea-helper(BL1, BL2, T, TNEG, TNEW, TNEWNEG, NMOD) = 
+        if isAllZero(BL2) then
+            if TNEG then
+                tailBits(len(NMOD), NMOD b- T)
+            else
+                T
+            fi
+        else
+            eea-helper(
+                BL2,
+                BL1 brem BL2,
+                TNEW,
+                TNEWNEG,
+                if TNEG == TNEWNEG then
+                    if T >= tailBits(len(T), (BL1 bdiv BL2) b* TNEW) then
+                        tailBits(len(NMOD), T b- tailBits(len(T), (BL1 bdiv BL2) b* TNEW))
+                    else
+                        tailBits(len(NMOD), tailBits(len(T), (BL1 bdiv BL2) b* TNEW) b- T)
+                    fi
+                else
+                    tailBits(len(NMOD), T b+' tailBits(len(T), (BL1 bdiv BL2) b* TNEW))
+                fi,
+                if TNEG == TNEWNEG then
+                    if T >= tailBits(len(T), (BL1 bdiv BL2) b* TNEW) then
+                        TNEG
+                    else
+                        not TNEG
+                    fi
+                else
+                    TNEG
+                fi,
+                NMOD
+            )
+        fi .
+    
+endfm
+
+*** red (0 1) < ( 0) .
+*** red pad(0, 3, 1) .
+*** red (1 0) b+ (0 1) .
+
+*** red (0 0) b+ (0 0) .
+*** red msb((0 0) b+ (0 0) b- (1 0)) .
+*** red bmod+(0 0, 0 0, 1 0) == 0 0 .
+*** red bmod+(0 0, 0 1, 1 0) == 0 1 .
+*** red bmod+(0 0, 1 0, 1 0) == 0 0 .
+*** red bmod+(0 0, 1 1, 1 0) == 0 1 .
+*** red bmod+(0 1, 0 0, 1 0) == 0 1 .
+*** red bmod+(0 1, 0 1, 1 0) == 0 0 .
+*** red bmod+(0 1, 1 0, 1 0) == 0 1 .
+*** red bmod+(0 1, 1 1, 1 0) == 0 0 .
+
+
+*** red bmod-exp(0 0, 0 0, 1 0) .
+*** == 0 0 .

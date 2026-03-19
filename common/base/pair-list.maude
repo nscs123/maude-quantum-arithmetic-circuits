@@ -1,0 +1,13 @@
+load ./list.maude
+load ./pair.maude
+load ../views/view-pair.maude
+
+*** ペアのリストをパラメータ化されたモジュールとして定義
+*** LIST{Pair{X}} を使用して、Pair{X}の要素を持つリストを作成
+fmod PAIRLIST{X :: TRIV} is
+    pr PAIR{X} .
+    pr LIST{Pair{X}} * (sort List{Pair{X}} to PairList{X}) .
+
+    subsort Pair{X} < PairList{X} .
+
+endfm

@@ -1,0 +1,23 @@
+load ./views/view-nat.maude
+load ./base/list.maude
+
+fmod NATLIST is
+    pr NAT .
+    pr LIST{Nat} * (sort List{Nat} to NatList) .
+
+    vars N N1 : Nat .
+    
+    --- nList(1,4) -> (1 2 3 4): NatList
+    op nList : Nat Nat -> NatList .
+
+    --- nList(1, 4) -> 1 2 3 4.
+    eq nList(N, s(N1)) = if N == s(N1) then N else nList(N, N1) s(N1) fi .
+    eq nList(N, N) = N .
+endfm
+
+*** red 0 1 .
+*** red rev(nList(1, 4)) .
+*** red nList(1, 4) .
+*** red nList(0, 0) .
+*** red nList(0, 1) .
+*** red nList(0, 2) .

@@ -1,0 +1,67 @@
+load ../../../circuits/ctrl-mod-add/ctrl-mod-add.maude
+load ../../../common/bit-list.maude
+load ../../verify.maude
+
+fmod VERIFY-CTRL-MOD-ADD is
+    pr CTRL-MOD-ADD .
+    pr VERIFY .
+
+    op verifyN2 : Nat VectPair Bit -> Bool .
+    op expected : Nat Bit Vect Vect -> Vect .
+    op modulus : Nat -> BitList .
+    op modAdded : Vect Vect BitList -> BitList .
+    ops carry-out ancilla : -> Vect .
+
+    vars VY VX : Vect .
+    var N : Nat .
+    var CTRL : Bit .
+    var MOD : BitList .
+
+
+    eq carry-out = vect(0) .
+    eq ancilla = vect(0 0) .
+
+
+    --- modulus: |N>
+    --- generate N 1s
+    --- modulus is not variable, so we need to generate it for each N
+    eq modulus(N) = rev(pad(1, N, 1)) .
+
+    --- ctrl-mod-added: |VX> |VY> -> |VX> |VY + VX>
+    eq modAdded(VX, VY, MOD) = bmod+(rev(toBitList(VX)), rev(toBitList(VY)), MOD) .
+
+    --- expected: |CTRL> |VX> |VY + VX mod modulus(N)> |CARRYOUT=0> |MODULUS=modulus(N)> |ANCILLAE=00>
+    eq expected(N, CTRL, VX, VY) = 
+        if isZero(CTRL) 
+        then 
+            vect(CTRL) (x) VX (x) VY (x) carry-out (x) vect(modulus(N)) (x) ancilla 
+        else 
+            vect(CTRL) (x) VX (x) vect(rev(modAdded(VX, VY, modulus(N)))) (x) carry-out (x) vect(modulus(N)) (x) ancilla 
+        fi .
+
+    --- |CTRL> |VX> |VY> |CARRYOUT> |MODULUS> |ANCILLA>
+    eq verifyN2(N, (VX : VY), CTRL) = 
+    if (rev(toBitList(VX)) >= modulus(N) or rev(toBitList(VY)) >= modulus(N)) 
+    then true  --- skip if x,y < MODULUS number(modulus(N))
+    else 
+        (ctrl-mod-add(0, nList(1, N), nList(N + 1, N + N), 2 * N + 1, nList(2 * N + 2, 3 * N + 1), nList(3 * N + 2, 3 * N + 3)) x vect(CTRL) (x) VX (x) VY (x) |0> (x) vect(modulus(N)) (x) ancilla) == expected(N, CTRL, VX, VY) 
+    fi .
+endfm
+
+
+red verify(3) .
+*** red verify-one(1) .
+*** red verify-one(2) .
+*** red verify-one(3) .
+*** red verify-one(4) .
+*** red verify-one(5) .
+*** red verify-one(6) .
+*** red verify-one(7) .
+*** red verify-one(8) .
+*** red verify-one(9) .
+*** red verify-one(10) .
+*** red verify-one(11) .
+*** red verify-one(12) .
+*** red verify-one(13) .
+*** red verify-one(14) .
+*** red verify-one(15) .

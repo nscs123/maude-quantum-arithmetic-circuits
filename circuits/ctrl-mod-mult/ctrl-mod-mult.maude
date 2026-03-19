@@ -1,0 +1,110 @@
+load ../ctrl-ctrl-mod-add/ctrl-ctrl-mod-add.maude
+
+--- MODULAR MULTIPLICATION circuit
+---- a and N are set as constant numbers
+---- |CTRL> |X> |0> |ancilla> -> |CTRL> |X> |X> |ancilla> --- if CTRL=0
+---- |CTRL> |X> |0> |ancilla> -> |CTRL> |X> |a * X mod N> |ancilla> --- if CTRL=1
+
+fmod CTRL-MOD-MULT is
+    pr CTRL-CTRL-MOD-ADD .
+    pr BITLIST .
+    pr NATLIST .
+    pr QC .
+    pr NAT .
+
+    --- ops signatures:
+    op ctrl-mod-mult : Nat NatList NatList NatList NatList BitList BitList -> Mat .
+    op sub-ctrl-mod-mult : Nat NatList NatList NatList NatList BitList BitList -> Mat .
+    op load : Nat Nat NatList BitList -> Mat .
+    op unload : Nat Nat NatList BitList -> Mat .
+    op loadX : Nat NatList NatList -> Mat .
+    op loadN : NatList BitList -> Mat .
+
+    --- variables
+    vars CTRL CTRL1 CTRL2 X0 ANC0 B0 N0 ANC21 ANC22 ANC23 : Nat .
+    vars XL OUTLIST ANCLIST1 ANCLIST2 NL ANCLIST : NatList .
+    vars A0 NB0 : Bit .
+    vars NBL ABL : BitList .
+
+    --- ctrl-mod-mult: This Operator is used to multiply `a` and `x` mod `N`
+    ---  Input: vector=|ctrl> |x> |0> |output(0's as input)> |qubits for encoded mod `N` number>|ancilla qubits>
+    ---         - parameter: `a` = BitList of `a`
+    ---  Output: vector=|ctrl> |x> |a * x mod N> |qubits for encoded mod `N` number>|ancilla qubits>
+
+    --- NOTE:
+        --- This circuit is used to multiply `a` and `x` mod `N`
+        --- 1. |ctrl> |x> |0> |N> |ancilla> -> |ctrl> |x> |a * x mod N> |N> |ancilla> if ctrl=1
+        --- 2. |ctrl> |x> |0> |N> |ancilla> -> |ctrl> |x> |x > |N> |ancilla> if ctrl=0
+
+        --- PARAMETERS:
+            --- CTRL: 1 qubit for control
+            --- XL: N-qubits for |x>
+            --- OUTLIST: N-qubits for |output>
+            --- NL: N-qubits for for |N>
+            --- ANC0: 1-qubit ancilla qubit (for carry-out in ctrl-mod-add)
+            --- ANCLIST1: N-qubits for ancilla qubits (loads (2^i*a) for i=0 to N-1)
+            --- ANCLIST2: 3-qubits for ancilla qubits (used for ctrl-ctrl-mod-add)
+            --- ABL: BitList of `a` (N-bits for `a`)
+            --- NBL: BitList of `N` (N-bits for `N`)
+    eq [ctrl-mod-mult] : ctrl-mod-mult(CTRL, XL, OUTLIST, NL, ANC0 ANCLIST1 ANC21 ANC22 ANC23, ABL, NBL) = 
+        X(CTRL) x
+        loadX(CTRL, XL, OUTLIST) x
+        X(CTRL) x
+        sub-ctrl-mod-mult(CTRL, XL, OUTLIST, NL, ANC0 ANCLIST1 ANC21 ANC22 ANC23, ABL, NBL) x
+        loadN(NL, rev(NBL)) .
+
+    eq [sub-ctrl-mod-mult] : sub-ctrl-mod-mult(CTRL, X0 XL, OUTLIST, NL, ANC0 ANCLIST1 ANC21 ANC22 ANC23, ABL, NBL) = 
+        --- NOTE: (ABL 0) = 2*(ABL) mod NBL for recursive call (left shift in MSB-first representation).
+        sub-ctrl-mod-mult(CTRL, XL, OUTLIST, NL, ANC0 ANCLIST1 ANC21 ANC22 ANC23, 
+            bmod*(ABL, 1 0, NBL), 
+        NBL) x
+        unload(CTRL, X0, ANCLIST1, rev(ABL)) x
+        ctrl-ctrl-mod-add(CTRL, X0, ANCLIST1, OUTLIST, ANC0, NL, ANC21 ANC22 ANC23) x
+        load(CTRL, X0, ANCLIST1, rev(ABL)) .
+
+    eq [sub-ctrl-mod-mult-base] : sub-ctrl-mod-mult(CTRL, X0, OUTLIST, NL, ANC0 ANCLIST1 ANC21 ANC22 ANC23, ABL, NBL) = 
+        unload(CTRL, X0, ANCLIST1, rev(ABL)) x
+        ctrl-ctrl-mod-add(CTRL, X0, ANCLIST1, OUTLIST, ANC0, NL, ANC21 ANC22 ANC23) x
+        load(CTRL, X0, ANCLIST1, rev(ABL)) .
+
+    --- load: index0, index1, ancilla0, BitList of `a`
+    eq [load-x] : loadX(CTRL, X0 XL, B0 OUTLIST) = 
+        CCX(CTRL, X0, B0) x
+        loadX(CTRL, XL, OUTLIST) .
+
+    eq [load-x-base] : loadX(CTRL, X0, B0) = 
+        CCX(CTRL, X0, B0) .
+
+    --- loadN: load the value of N into the qubits
+    eq [load-n] : loadN(N0 NL, NB0 NBL) = 
+        if isOne(NB0) then 
+            X(N0) x loadN(NL, NBL) 
+        else 
+            I(N0) x loadN(NL, NBL) 
+        fi .
+    
+    eq [load-n-base] : loadN(N0, NB0) = 
+        if isOne(NB0) then 
+            X(N0) 
+        else 
+            I(N0) 
+        fi .
+
+    eq [load] : load(CTRL1, CTRL2, ANC0 ANCLIST, A0 ABL) = 
+        if isOne(A0) 
+        then
+            load(CTRL1, CTRL2, ANCLIST, ABL) x CCX(CTRL1, CTRL2, ANC0)
+        else
+            load(CTRL1, CTRL2, ANCLIST, ABL)
+        fi .
+
+    eq [load-base] : load(CTRL1, CTRL2, ANC0, A0) = 
+        if isOne(A0) 
+        then
+            CCX(CTRL1, CTRL2, ANC0)
+        else
+            I(ANC0)
+        fi .
+
+    eq [unload] : unload(CTRL1, CTRL2, ANCLIST, ABL) = (load(CTRL1, CTRL2, ANCLIST, ABL))^+ .
+endfm

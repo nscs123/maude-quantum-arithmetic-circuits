@@ -1,0 +1,52 @@
+load ../common/vect-list.maude
+load ../common/bit-list.maude
+load ../common/nat-list.maude
+load ../common/vect-pair.maude
+load ../common/vect-pair-list.maude
+load ../common/vect.maude
+load ../common/base/pair-list.maude
+
+fmod VERIFY is
+    pr BITLIST .
+    pr NATLIST .
+    pr VECT .
+    pr VECTLIST .
+    pr VECTPAIR .
+    pr VECTPAIRLIST .
+
+    --- signatures.
+    --- verify: (Nat: number of qubits)
+    op verify : Nat -> Bool [strat (1 2 0)] . 
+    op verify-one : Nat -> Bool [strat (1 2 0)] . 
+    --- verifyN: lazy pair generation from two VectLists
+    op verifyN : Nat VectList VectList Bool -> Bool . 
+    --- verifyN-inner: iterate over second VectList for a fixed first Vect
+    op verifyN-inner : Nat Vect VectList Bool -> Bool .
+    --- verifyN2: (Nat: number of qubits. VectPair: pair of vectors. Bit: ctrl = 0 or 1)
+    --- Note: Submodules may override with additional attributes like [strat (...)]
+    op verifyN2 : Nat VectPair Bit -> Bool .
+
+    --- veriables
+    vars V V1 V2 VX VY : Vect .
+    vars VL VL1 VL2 VLX VLY : VectList .
+    var N : Nat .
+    var CTRL : Bit .
+    var VP : VectPair .
+    var VPL : VectPairList .
+    var Bl : Bool .
+
+    --- equeations.
+    --- verify.
+    eq verify(1) = verifyN(1, vectors(1), vectors(1), true) .
+    eq verify(s(N)) = verifyN(s(N), vectors(s(N)), vectors(s(N)), true) and verify(N) .
+    eq verify-one(N) = verifyN(N, vectors(N), vectors(N), true) .
+
+    --- verifyN (lazy pair generation, tail recursive with accumulator).
+    --- Iterate over first list VLX
+    eq verifyN(N, VX VLX, VLY, Bl) = verifyN(N, VLX, VLY, verifyN-inner(N, VX, VLY, Bl)) .
+    eq verifyN(N, VX, VLY, Bl) = verifyN-inner(N, VX, VLY, Bl) .
+    
+    --- verifyN-inner: for fixed VX, iterate over VLY
+    eq verifyN-inner(N, VX, VY VLY, Bl) = verifyN-inner(N, VX, VLY, verifyN2(N, (VX : VY), 0) and verifyN2(N, (VX : VY), 1) and Bl) .
+    eq verifyN-inner(N, VX, VY, Bl) = (verifyN2(N, (VX : VY), 0) and verifyN2(N, (VX : VY), 1)) and Bl .
+endfm

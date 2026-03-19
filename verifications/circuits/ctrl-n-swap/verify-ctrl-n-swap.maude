@@ -1,0 +1,31 @@
+load ../../../circuits/ctrl-n-swap/ctrl-n-swap.maude
+load ../../verify.maude
+
+fmod VERIFY-CTRL-N-SWAP is
+    pr CTRL-N-SWAP .
+    pr VERIFY .
+
+    op verifyN2 : Nat VectPair Bit -> Bool .
+    --- Nat: number of qubits. 
+
+    --- veriables
+    vars V1 V2 : Vect .
+    var N : Nat .
+
+    ---- no changes when ctrl=|0>
+    eq [ctrl-0] : verifyN2(N, (V1 : V2), 0) = ctrlNSwap(0, nList(1, N), nList(N + 1, N + N)) x |0> (x) V1 (x) V2 == |0> (x) V1 (x) V2 .
+    ---- ctrl=|1>
+    eq [ctrl-1] : verifyN2(N, (V1 : V2), 1) = ctrlNSwap(0, nList(1, N), nList(N + 1, N + N)) x |1> (x) V1 (x) V2 == |1> (x) V2 (x) V1 .
+endfm
+
+
+red verify(4) .
+
+*** red verify-one(1) .
+*** red verify-one(2) .
+*** red verify-one(3) .
+*** red verify-one(4) .
+*** red verify-one(5) .
+*** red verify-one(6) .
+*** red verify-one(7) .
+*** red verify-one(8) .

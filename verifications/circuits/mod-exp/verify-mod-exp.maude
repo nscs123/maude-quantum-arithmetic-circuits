@@ -1,0 +1,119 @@
+load ../../../circuits/mod-exp/mod-exp.maude
+load ../../../common/bit-list.maude
+load ../../verify.maude
+
+fmod VERIFY-MOD-EXP is
+    pr MOD-EXP .
+    pr VERIFY .
+
+    op verifyN2 : Nat VectPair Bit -> Bool .
+    op expected : Nat Vect Vect -> Vect [memo strat (1 2 3 4 0)] .
+    op apply-mat : Mat Vect -> Vect [strat (1 2 0)] .
+    op mod-exp-mat : Nat Vect -> Mat [memo strat (1 2 0)] .
+    op init-state : Nat Vect -> Vect [memo strat (1 2 0)] .
+    op x-reg : Nat -> NatList [memo] .
+    op out-reg : Nat -> NatList [memo] .
+    op tmp-reg : Nat -> NatList [memo] .
+    op n-reg : Nat -> NatList [memo] .
+    op anc-reg : Nat -> NatList [memo] .
+    op a-bits : Vect -> BitList [memo] .
+    op dec : Nat -> Nat [memo] .
+    op modulus : Nat -> BitList [memo] .
+    op modExp : BitList BitList BitList -> BitList [memo] .
+    op toNat : BitList -> Nat [memo] .
+    op toNat-lsb : BitList -> Nat [memo] .
+    op shouldSkip : Nat Vect -> Bool [memo] .
+    
+    vars A N : Nat .
+    var N1 : Nat .
+    var M : Mat .
+    vars VX VA : Vect .
+    vars  XBL ABL MOD BL : BitList .
+    vars B CTRL : Bit .
+
+    --- toNat: convert BitList to Nat
+    --- BitList is MSB-first, so we reverse it to LSB-first for easier processing
+    eq toNat(BL) = toNat-lsb(rev(BL)) .
+    
+    --- toNat-lsb: convert LSB-first BitList to Nat
+    eq toNat-lsb(0) = 0 .
+    eq toNat-lsb(1) = 1 .
+    eq toNat-lsb(0 BL) = toNat-lsb(BL) * 2 [owise] .
+    eq toNat-lsb(1 BL) = toNat-lsb(BL) * 2 + 1 [owise] .
+
+    --- modulus: generate modulus BitList
+    eq modulus(N) = pad(1, N, 1) .
+
+    --- modExp: compute (a ^ x) mod N
+    eq modExp(ABL, XBL, MOD) = bmod-exp(ABL, XBL, MOD) .
+
+    --- shouldSkip: check if verification should be skipped for this input
+    --- Returns true if gcd(N, a) != 1 or a = 1 or a = 0 or a >= N
+    eq shouldSkip(N, VA) = 
+        gcd(toNat(modulus(N)), toNat(rev(toBitList(VA)))) =/= 1 
+        or toNat(rev(toBitList(VA))) == 1 
+        or toNat(rev(toBitList(VA))) == 0 
+        or toNat(rev(toBitList(VA))) >= toNat(modulus(N)) .
+
+    --- expected output state:
+    --- |x>_n |a^x mod N>_n |0>_n |0>_n |ancilla>
+    eq expected(N, VX, VA) = 
+        VX (x) 
+        vect(rev(modExp(rev(toBitList(VA)), rev(toBitList(VX)), modulus(N)))) (x) 
+        vect(pad(0, N, 0)) (x) 
+        vect(pad(0, N, 0)) (x) 
+        vect(pad(0, N + 5, 0)) .
+
+    --- helper to avoid parser ambiguity for overloaded x
+    eq apply-mat(M, VX) = M x VX .
+
+    eq dec(0) = 0 .
+    eq dec(s(N1)) = N1 .
+
+    eq x-reg(N) = nList(0, dec(N)) .
+    eq out-reg(N) = nList(N, dec(2 * N)) .
+    eq tmp-reg(N) = nList((2 * N), dec(3 * N)) .
+    eq n-reg(N) = nList((3 * N), dec(4 * N)) .
+    eq anc-reg(N) = nList((4 * N), ((5 * N) + 4)) .
+    eq a-bits(VA) = rev(toBitList(VA)) .
+
+    eq mod-exp-mat(N, VA) =
+        mod-exp(x-reg(N), out-reg(N), tmp-reg(N), n-reg(N), anc-reg(N), a-bits(VA), modulus(N)) .
+
+    eq init-state(N, VX) =
+        ((((VX (x) vect(rev(pad(1, N, 0))))
+            (x) vect(pad(0, N, 0)))
+            (x) vect(pad(0, N, 0)))
+            (x) vect(pad(0, N + 5, 0))) .
+
+    eq verifyN2(N, (VX : VA), CTRL) =  
+        if shouldSkip(N, VA)
+        then
+            true --- skip if gcd(N, a) != 1 or a = 1 or a = 0 or a >= N
+        else
+            apply-mat(mod-exp-mat(N, VA), init-state(N, VX)) == expected(N, VX, VA)
+        fi .
+endfm
+
+*** Test toNat
+*** red toNat(0) .
+*** red toNat(1) .
+*** red toNat(0 0) .
+*** red toNat(0 1) .
+*** red toNat(1 0) .
+*** red toNat(1 1) .
+*** red gcd(2, 0) .
+
+
+red verify(3) .
+*** red verify-one(1) .
+*** red verify-one(2) .
+*** red verify-one(3) .
+*** red verify-one(4) .
+*** red verify-one(5) .
+*** red verify-one(6) .
+*** red verify-one(7) .
+*** red verify-one(8) .
+*** red verify-one(9) .
+*** red verify-one(10) .
+*** red verify-one(11) .

@@ -1,0 +1,5 @@
+load ../vect.maude
+
+view ViewVect from TRIV to VECT is
+    sort Elt to Vect .
+endv

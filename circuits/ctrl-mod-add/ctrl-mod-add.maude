@@ -1,0 +1,51 @@
+load ../ctrl-add/ctrl-add.maude
+load ../ctrl-sub/ctrl-sub.maude
+load ../n-swap/n-swap.maude
+load ../../common/bit-list.maude
+load ../../common/nat-list.maude
+load ../../common/vect.maude
+
+--- MODULAR ADDITION circuit
+---- N is set as constant
+---- |CTRL> |X> |0> |ancilla> -> |CTRL> |X> |X> |ancilla> --- if CTRL=0
+---- |CTRL> |X> |0> |ancilla> -> |CTRL> |X> |X + Y mod N> |ancilla> --- if CTRL=1
+fmod CTRL-MOD-ADD is
+    pr CTRL-ADD .
+    pr CTRL-SUB .
+    pr N-SWAP .
+    pr BITLIST .
+    pr NATLIST .
+    pr VECT .
+    pr NAT .
+    
+    --- ops signatures:
+    op ctrl-mod-add : Nat NatList NatList Nat NatList NatList -> Mat .
+
+    --- variables
+    vars CTRL CARRY-OUT ANC1 ANC2 : Nat .
+    vars XL YL NL N : NatList .
+
+
+    --- ctrl-mod-add: |ctrl> |x> |y> |carry-out> |NL> |ancilla1, ancilla2> -> |ctrl> |x> |x + y mod N> |carry-out> |N> |ancilla1, ancilla2>
+    --- [NOTICE] x,y < N must be satisfied. (if x,y >= N, the result is not correct)
+    eq [ctrl-mod-add] : ctrl-mod-add(CTRL, XL, YL, CARRY-OUT, NL, ANC1 ANC2) = 
+            ctrl-add(CTRL, XL, YL, CARRY-OUT, ANC1) x 
+            CX(CTRL, CARRY-OUT) x
+            CX(CARRY-OUT, ANC2) x
+            CX(CTRL, CARRY-OUT) x
+            ctrl-sub(CTRL, XL, YL, CARRY-OUT, ANC1) x 
+            nSwap(XL, NL) x 
+            ctrl-add(ANC2, XL, YL, CARRY-OUT, ANC1) x 
+            CX(CARRY-OUT, ANC2) x 
+            ctrl-sub(CTRL, XL, YL, CARRY-OUT, ANC1) x
+            nSwap(XL, NL) x 
+            ctrl-add(CTRL, XL, YL, CARRY-OUT, ANC1) .
+endfm
+
+
+*** --- ctrl=0
+*** red (ctrl-mod-add(0, 1 2, 3 4, 5, 6 7, 8 9) x vect(0) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0)) == vect(0) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0) .
+
+*** --- ctrl=1 
+*** ---1 + 1 mod 2 = 0
+*** red ctrl-mod-add(0, 1 2, 3 4, 5, 6 7, 8 9) x vect(1) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(0 1) (x) vect(0 0) == vect(1) (x) vect(1 0) (x) vect(0 0) (x) vect(0) (x) vect(0 1) (x) vect(0 0) .

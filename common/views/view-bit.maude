@@ -1,0 +1,5 @@
+load ../sorts/bit.maude
+
+view ViewBit from TRIV to BIT is
+    sort Elt to Bit .
+endv

@@ -1,0 +1,32 @@
+load ../../common/bit-list.maude
+load ../../common/nat-list.maude
+load ../../qc.maude
+
+fmod CTRL-ADD is
+    pr BITLIST .
+    pr NATLIST .
+    pr QC .
+    
+    --- ops signatures
+    op ctrl-add : Nat NatList NatList Nat Nat -> Mat .
+    op sub-ctrl-add : Nat NatList NatList Nat -> Mat .
+    op cuma : Nat Nat Nat Nat -> Mat .
+    op maj : Nat Nat Nat -> Mat .
+
+    --- definition of add function
+    vars CTRL X0 X1 Y0 CARRY-OUT ANCILLA N0 N1 N2 N3 : Nat .
+    vars XL YL : NatList .
+
+    --- MAJ
+    eq [maj] : maj(N0, N1, N2) = CCX(N0, N1, N2) x CX(N2, N0) x CX(N2, N1) .
+
+    --- C-UMA
+    eq [cuma] : cuma(N0, N1, N2, N3) =  CX(N3, N1) x CCX(N0, N1, N2) x CX(N3, N2) x CCX(N1, N2, N3) .
+
+    --- ctrl-add: |ctrl> |x> |y> |carry-out> |ancilla> -> |ctrl> |x> |x + y> |carry-out> |ancilla>
+    eq [ctrl-add] : ctrl-add(CTRL, X0 XL, Y0 YL, CARRY-OUT, ANCILLA) = CCX(CTRL, X0, Y0) x CCX(Y0, X0, ANCILLA) x sub-ctrl-add(CTRL, ANCILLA XL, YL, CARRY-OUT) x CCX(Y0, X0, ANCILLA) .
+    eq [ctrl-add-2] : ctrl-add(CTRL, X0, Y0, CARRY-OUT, ANCILLA) = CCX(CTRL, X0, Y0) x CCX(Y0, X0, ANCILLA) x CCX(CTRL, ANCILLA, CARRY-OUT) x CCX(Y0, X0, ANCILLA) .
+    eq [sub-ctrl-add-1] : sub-ctrl-add(CTRL, X0 X1 XL, Y0 YL, CARRY-OUT) = cuma(CTRL, X0, Y0, X1) x sub-ctrl-add(CTRL, X1 XL, YL, CARRY-OUT) x maj(X0, Y0, X1) .
+    eq [sub-ctrl-add-2] : sub-ctrl-add(CTRL, X0 X1, Y0, CARRY-OUT) = cuma(CTRL, X0, Y0, X1) x CCX(CTRL, X1, CARRY-OUT) x maj(X0, Y0, X1) .
+
+endfm

@@ -1,0 +1,31 @@
+load ./bit-list.maude
+
+fmod VECT is
+    pr NAT .
+    pr BITLIST .
+
+    --- operators
+    op vect : BitList -> Vect .
+    op len : Vect -> NzNat .
+
+    --- variables
+    var V V1 : Vect .
+    var N : Nat .
+    var BL : BitList .
+
+    --- vect: convert BitList to Vect
+    eq vect(0 BL) = |0> (x) vect(BL) .
+    eq vect(1 BL) = |1> (x) vect(BL) .
+    eq vect(BL 0) = vect(BL) (x) |0> .
+    eq vect(BL 1) = vect(BL) (x) |1> .
+    eq vect(0) = |0> .
+    eq vect(1) = |1> .
+
+    --- len.
+    eq len(|0>) = 1 .
+    eq len(|1>) = 1 .
+    eq len(V (x) V1) = len(V1) + 1 .
+endfm
+
+*** red vect(0 1 1 0) .
+*** red len(vect(0 1 1 0)) .

@@ -1,0 +1,69 @@
+load ./ctrl-mod-mult.maude
+load ../../common/vect.maude
+
+
+fmod TEST_LOAD is
+    pr CTRL-MOD-MULT .
+    pr VECT .
+    pr NAT .
+
+
+    op load-unload : Nat BitList -> Mat .
+
+    var N : Nat .
+    var BL : BitList .
+
+    eq [load-unload] : load-unload(N, BL) = unload(0, 1, nList(2,N + 1), BL) x load(0, 1, nList(2,N + 1), BL) .
+endfm
+
+red load(0, 1, 2 3, 0 0) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+red load(0, 1, 2 3, 0 1) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+red load(0, 1, 2 3, 1 0) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+red load(0, 1, 2 3, 1 1) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+
+red load(0, 1, 2 3, 0 0) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+red load(0, 1, 2 3, 0 1) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+red load(0, 1, 2 3, 1 0) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+red load(0, 1, 2 3, 1 1) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+
+red load(0, 1, 2 3, 0 0) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+red load(0, 1, 2 3, 0 1) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+red load(0, 1, 2 3, 1 0) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+red load(0, 1, 2 3, 1 1) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+
+red load(0, 1, 2 3, 0 0) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(0 0) .
+red load(0, 1, 2 3, 0 1) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(0 1) .
+red load(0, 1, 2 3, 1 0) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(1 0) .
+red load(0, 1, 2 3, 1 1) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(1 1) .
+
+red load-unload(2, 0 0) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+red load-unload(2, 0 1) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+red load-unload(2, 1 0) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+red load-unload(2, 1 1) x vect(0 0) (x) vect(0 0) == vect(0 0) (x) vect(0 0) .
+
+red load-unload(2, 0 0) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+red load-unload(2, 0 1) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+red load-unload(2, 1 0) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+red load-unload(2, 1 1) x vect(0 1) (x) vect(0 0) == vect(0 1) (x) vect(0 0) .
+
+red load-unload(2, 0 0) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+red load-unload(2, 0 1) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+red load-unload(2, 1 0) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+red load-unload(2, 1 1) x vect(1 0) (x) vect(0 0) == vect(1 0) (x) vect(0 0) .
+
+red load-unload(2, 0 0) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(0 0) .
+red load-unload(2, 0 1) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(0 0) .
+red load-unload(2, 1 0) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(0 0) .
+red load-unload(2, 1 1) x vect(1 1) (x) vect(0 0) == vect(1 1) (x) vect(0 0) .
+
+
+red loadX(0, 1 2, 3 4) x vect(0)(x) vect(0 0) (x) vect(0 0) == vect(0)(x) vect(0 0) (x) vect(0 0) .
+red loadX(0, 1 2, 3 4) x vect(1)(x) vect(0 1) (x) vect(0 0) == vect(1)(x) vect(0 1) (x) vect(0 1) .
+red loadX(0, 1 2, 3 4) x vect(1)(x) vect(1 1) (x) vect(0 0) == vect(1)(x) vect(1 1) (x) vect(1 1) .
+red loadX(0, 1 2, 3 4) x vect(0)(x) vect(1 1) (x) vect(0 0) == vect(0)(x) vect(1 1) (x) vect(0 0) .
+
+
+red loadN(0 1, 1 1) x vect(0 0) == vect(1 1) .
+red loadN(0 1, 1 0) x vect(0 0) == vect(1 0) .
+red loadN(0 1, 0 1) x vect(0 0) == vect(0 1) .
+red loadN(0 1, 0 0) x vect(0 0) == vect(0 0) .

@@ -1,0 +1,16 @@
+load ../../common/nat-list.maude
+load ../../qc.maude
+
+fmod N-SWAP is
+    pr QC .
+    pr NATLIST .
+    pr NAT .
+
+    op nSwap : NatList NatList -> Mat .
+    vars NL1 NL2 : NatList .
+    vars N N1 N2  : Nat .
+
+    --- nswap
+    eq [nSwap-1] : nSwap(N1 NL1, N2 NL2) = nSwap(NL1, NL2) x SWAP(N1, N2) .
+    eq [nSwap-2] : nSwap(N1, N2) = SWAP(N1, N2) .
+endfm

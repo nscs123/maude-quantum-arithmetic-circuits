@@ -1,0 +1,44 @@
+load ./views/view-vect.maude
+load ./base/list.maude
+load ./vect.maude
+load ../qc.maude
+
+fmod VECTLIST is
+    pr NAT .
+    pr QC .
+    pr LIST{ViewVect} * (sort List{ViewVect} to VectList) .
+
+    subsort Vect < VectList .
+
+    --- operators
+    op vectors : Nat -> VectList .
+
+    --- variables
+    vars VL VL1 VL2 : VectList .
+    var V : Vect .
+    var N : Nat .
+    var M : Mat .
+
+    --- distributive: property of Vect (x) (VectList VectList) 
+    ---- left of (x)
+    eq V (x) (VL1 VL2) = (V (x) VL1) (V (x) VL2) .
+    ---- right of (x)
+    eq (VL1 VL2) (x) VL = (VL1 (x) VL) (VL2 (x) VL) .
+
+    --- distributive: left application of Matrix (x) (VectList VectList)
+    eq M x (V VL1) = (M x V) (M x VL1) .
+
+    --- len.
+    eq len(V) = 1 .
+    eq len(V VL) = len(VL) + 1 .
+
+    --- vectors: enumerate every vectors of length N
+    eq vectors(1) = |0> |1> .
+    eq vectors(N) = (|0> (x) vectors(N - 1)) (|1> (x) vectors(N - 1)).
+
+endfm
+
+
+*** red len(|0> |1>) .
+*** red vectors(2) .
+*** red len(vectors(2)) .

@@ -1,0 +1,37 @@
+load ../../../circuits/ctrl-add/ctrl-add.maude
+load ../../../common/bit-list.maude
+load ../../verify.maude
+
+fmod VERIFY-CTRL-ADD is
+    pr CTRL-ADD .
+    pr VERIFY .
+
+    op verifyN2 : Nat VectPair Bit -> Bool .
+    op expected : Bit Vect Vect -> Vect .
+    op ctrl-added : Bit Vect Vect -> BitList .
+
+    vars VY VX : Vect .
+    var N : Nat .
+    var CTRL : Bit .
+
+    --- ctrl-added: |VX> |VY> -> |VX> |VY + VX>
+    eq ctrl-added(CTRL, VX, VY) = if isZero(CTRL) then rev(toBitList(VY) 0) else rev(toBitList(VX)) b+ rev(toBitList(VY)) fi .
+    --- expected: |CTRL> |VX> |VY + VX> |ANCILLA>
+    eq expected(CTRL, VX, VY) = vect(CTRL) (x) VX (x) vect(rev(ctrl-added(CTRL, VX, VY))) (x) |0> .
+
+    --- |CTRL> |VX> |VY> |CARRYOUT> |ANCILLA>
+    eq verifyN2(N, (VX : VY), CTRL) = ((ctrl-add(0, nList(1, N), nList(N + 1, N + N), 2 * N + 1, 2 * N + 2) x (vect(CTRL) (x) VX (x) VY (x) |0> (x) |0>)) == expected(CTRL, VX, VY)) .
+endfm
+
+
+red verify(4) .
+*** red verify-one(1) .
+*** red verify-one(2) .
+*** red verify-one(3) .
+*** red verify-one(4) .
+*** red verify-one(5) .
+*** red verify-one(6) .
+*** red verify-one(7) .
+*** red verify-one(8) .
+*** red verify-one(9) .
+*** red verify-one(10) .

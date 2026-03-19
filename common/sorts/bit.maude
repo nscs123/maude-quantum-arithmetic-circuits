@@ -1,0 +1,11 @@
+fmod BIT is
+    sort Bit .
+
+    ops 0 1 : -> Bit .
+    op _<_ : Bit Bit -> Bool .
+
+    var B : Bit .
+    eq B < B = false .
+    eq B < 0 = false .
+    eq 0 < 1 = true .
+endfm

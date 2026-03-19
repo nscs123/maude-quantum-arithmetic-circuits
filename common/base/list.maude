@@ -1,0 +1,24 @@
+fmod LIST{X :: TRIV} is
+    pr NAT .
+    sort List{X} .
+    subsort X$Elt < List{X} .
+
+    --- variables
+    vars E E1 : X$Elt .
+    vars L1 L2 : List{X} .
+
+    --- operators
+    op _ _ : List{X} List{X} -> List{X} [ctor assoc] .
+    op len : List{X} -> NzNat .
+    op rev : List{X} -> List{X} [memo] .
+
+    --- len.
+    eq len(E) = 1 .
+    eq len(E L1) = len(L1) + 1 .
+
+
+    --- rev.
+    eq rev(E) = E .
+    eq rev(E L1) = rev(L1) E .
+
+endfm

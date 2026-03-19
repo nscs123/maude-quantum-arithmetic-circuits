@@ -1,0 +1,8 @@
+load ./views/view-vect.maude
+load ./base/pair.maude
+
+fmod VECTPAIR is
+    pr PAIR{ViewVect} * (sort Pair{ViewVect} to VectPair) .
+endfm
+
+*** red (|0> : |0>) .

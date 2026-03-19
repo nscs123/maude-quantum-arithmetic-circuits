@@ -1,0 +1,37 @@
+load ../ctrl-mod-mult/ctrl-mod-mult.maude
+
+--- Inverse of MODULAR MULTIPLICATION circuit
+
+fmod CTRL-MOD-MULT-DAGGER is
+    pr CTRL-MOD-MULT .
+    pr BITLIST .
+    pr NATLIST .
+    pr QC .
+    pr NAT .
+
+    --- ops signatures:
+    op ctrl-mod-mult-dagger : Nat NatList NatList NatList NatList BitList BitList -> Mat .
+
+    --- variables
+    vars CTRL ANC0 ANC21 ANC22 ANC23 : Nat .
+    vars XL OUTLIST NL ANCLIST1 : NatList .
+    vars ABL NBL : BitList .
+
+    --- ctrl-mod-mult-dagger: 
+    --- NOTE:
+        --- uncomutation circuit of ctrl-mod-mult
+        --- |ctrl> |x> |a*x mod N> |N> |ancilla> -> |ctrl> |x> |0 > |N> |ancilla> 
+
+        --- PARAMETERS:
+            --- CTRL: 1 qubit for control
+            --- XL: N-qubits for |x>
+            --- OUTLIST: N-qubits for |output>
+            --- NL: N-qubits for for |N>
+            --- ANC0: 1-qubit ancilla qubit (for carry-out in ctrl-mod-add)
+            --- ANCLIST1: N-qubits for ancilla qubits (loads (2^i*a) for i=0 to N-1)
+            --- ANCLIST2: 3-qubits for ancilla qubits (used for ctrl-ctrl-mod-add)
+            --- ABL: BitList of `a` (N-bits for `a`)
+            --- NBL: BitList of `N` (N-bits for `N`)
+    eq [ctrl-mod-mult-dagger] : ctrl-mod-mult-dagger(CTRL, XL, OUTLIST, NL, ANC0 ANCLIST1 ANC21 ANC22 ANC23, ABL, NBL) = 
+        (ctrl-mod-mult(CTRL, XL, OUTLIST, NL, ANC0 ANCLIST1 ANC21 ANC22 ANC23, ABL, NBL))^+ .
+endfm

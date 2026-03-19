@@ -1,0 +1,68 @@
+load ../../../circuits/ctrl-ctrl-mod-add/ctrl-ctrl-mod-add.maude
+load ../../../common/bit-list.maude
+load ../../verify.maude
+
+fmod VERIFY-CTRL-CTRL-MOD-ADD is
+    pr CTRL-CTRL-MOD-ADD .
+    pr VERIFY .
+
+    op verifyN2 : Nat VectPair Bit -> Bool .
+    op expected : Nat Bit Bit Vect Vect -> Vect .
+    op modulus : Nat -> BitList .
+    op modAdded : Vect Vect BitList -> BitList .
+    ops carry-out ancilla : -> Vect .
+    op circuitN : Nat -> Mat .
+
+    vars VY VX : Vect .
+    vars CTRL0 CTRL1 : Bit .
+    var N : Nat .
+    var MOD : BitList .
+
+    eq carry-out = vect(0) .
+    eq ancilla = vect(0 0 0) .
+
+    --- modulus: |N>
+    --- generate N 1s
+    --- modulus is not variable, so we need to generate it for each N
+    eq modulus(N) = rev(pad(1, N, 1)) .
+
+    --- ctrl-mod-added: |VX> |VY> -> |VX> |VY + VX>
+    eq modAdded(VX, VY, MOD) = bmod+(rev(toBitList(VX)), rev(toBitList(VY)), MOD) .
+
+    --- expected: |CTRL> |VX> |VY + VX mod modulus(N)> |CARRYOUT=0> |MODULUS=modulus(N)> |ANCILLAE=00>
+    eq expected(N, CTRL0, CTRL1, VX, VY) = 
+        if isZero(CTRL0) or isZero(CTRL1)
+        then 
+            --- when ctrl0=0, ctrl1=0 or ctrl0=1, ctrl1=0, do nothing
+            vect(CTRL0 CTRL1) (x) VX (x) VY (x) carry-out (x) vect(modulus(N)) (x) ancilla 
+        else 
+            --- when ctrl0=1, ctrl1=1, VX + VY mod N
+            vect(CTRL0 CTRL1) (x) VX (x) vect(rev(modAdded(VX, VY, modulus(N)))) (x) carry-out (x) vect(modulus(N)) (x) ancilla 
+        fi .
+
+
+    eq circuitN(N) = ctrl-ctrl-mod-add(0, 1, nList(2, N + 1), nList(N + 2, N + N + 1), 2 * N + 2, nList(2 * N + 3, 3 * N + 2), nList(3 * N + 3, 3 * N + 5)) .
+
+    --- |CTRL> |VX> |VY> |CARRYOUT> |MODULUS> |ANCILLA>
+    eq verifyN2(N, (VX : VY), CTRL0) = 
+    if (rev(toBitList(VX)) >= modulus(N) or rev(toBitList(VY)) >= modulus(N)) 
+        then true  --- skip if x,y < MODULUS number(modulus(N))
+        else 
+            --- ctrl1=0
+            (circuitN(N) x vect(CTRL0 0) (x) VX (x) VY (x) carry-out (x) vect(modulus(N)) (x) ancilla) == expected(N, CTRL0, 0, VX, VY) 
+            --- ctrl1=1
+            and (circuitN(N) x vect(CTRL0 1) (x) VX (x) VY (x) carry-out (x) vect(modulus(N)) (x) ancilla) == expected(N, CTRL0, 1, VX, VY) 
+    fi .
+endfm
+
+
+red verify(3) .
+*** red verify-one(1) .
+*** red verify-one(2) .
+*** red verify-one(3) .
+*** red verify-one(4) .
+*** red verify-one(5) .
+*** red verify-one(6) .
+*** red verify-one(7) .
+*** red verify-one(8) .
+*** red verify-one(9) .

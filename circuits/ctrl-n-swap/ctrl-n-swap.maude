@@ -1,0 +1,19 @@
+load ../../common/nat-list.maude
+load ../../qc.maude
+load ../../common/vect.maude
+
+fmod CTRL-N-SWAP is
+    pr QC .
+    pr NATLIST .
+    pr VECT .
+
+    op ctrlNSwap : Nat NatList NatList -> Mat .
+    vars NL1 NL2 : NatList .
+    vars N N1 N2 CTRL : Nat .
+
+    --- ctrl-swap
+    eq [ctrlNSwap] : ctrlNSwap(CTRL, N1 NL1, N2 NL2) = ctrlNSwap(CTRL, NL1, NL2) x CSWAP(CTRL, N1, N2) .
+    eq [ctrlNSwap-2] : ctrlNSwap(CTRL, N1, N2) = CSWAP(CTRL, N1, N2) .
+endfm
+
+*** red ctrlNSwap(0, 1 2, 3 4) x |1> (x) vect(0 0) (x) vect(1 1) == |1> (x) vect(1 1) (x) vect(0 0) .

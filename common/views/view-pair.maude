@@ -1,0 +1,6 @@
+load ../base/pair.maude
+
+--- Pair{X} as Parameter
+view Pair{X :: TRIV} from TRIV to PAIR{X} is
+    sort Elt to Pair{X} .
+endv

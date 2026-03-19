@@ -1,0 +1,24 @@
+load ./base/pair-list.maude
+load ./vect-list.maude
+load ./vect-pair.maude
+
+fmod VECTPAIRLIST is
+    pr VECTLIST .
+    pr PAIRLIST{ViewVect} * (sort Pair{ViewVect} to VectPair, sort PairList{ViewVect} to VectPairList) .
+
+    --- operators
+    op vect-pairs : VectList VectList -> VectPairList .
+
+    --- variables
+    vars V V1 : Vect .
+    vars VL VL1 VL2 : VectList .
+
+    --- vect-pairs: create VectPairList from two VectList.
+    --- This generates all pairs of vectors from the two lists.
+    eq vect-pairs(V VL1, VL2) = vect-pairs(V, VL2) vect-pairs(VL1, VL2) .
+    eq vect-pairs(V, V1 VL2) = (V : V1) vect-pairs(V, VL2) .
+    eq vect-pairs(V, V1) = (V : V1) .
+endfm
+
+
+*** red (|0> : |0>) (|1> : |0>) .

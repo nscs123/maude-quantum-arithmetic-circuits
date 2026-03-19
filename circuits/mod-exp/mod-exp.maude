@@ -1,0 +1,61 @@
+load ../ctrl-mod-mult-dagger/ctrl-mod-mult-dagger.maude
+load ../ctrl-n-swap/ctrl-n-swap.maude
+
+--- MODULAR EXPONENTIATION circuit
+--- Computes |a^x mod N> using repeated squaring (square-and-multiply method)
+
+fmod MOD-EXP is
+    pr CTRL-MOD-MULT .
+    pr CTRL-MOD-MULT-DAGGER .
+    pr CTRL-N-SWAP .
+    pr BITLIST .
+    pr NATLIST .
+    pr QC .
+    pr NAT .
+
+    --- modular exponentiation circuit
+    op mod-exp : NatList NatList NatList NatList NatList BitList BitList -> Mat .
+    --- sub-mod-exp: one step of controlled modular multiplication with swap
+    op sub-mod-exp : NatList NatList NatList NatList NatList BitList BitList -> Mat .
+
+    --- variables
+    vars X0 N0 ANC : Nat .
+    vars XL OUTLIST TMPLIST NL ANCLIST : NatList .
+    vars ABL NBL : BitList .
+
+    --- NOTE:
+        --- This circuit computes |a^x mod N>
+        --- Input:  |x>_n |1>_n |0>_n |N>_n |ancilla>
+        --- Output: |x>_n |a^x mod N>_n |0>_n |N>_n |ancilla>
+        ---
+        --- The algorithm processes x bits from LSB to MSB (right to left).
+        --- For each bit x_i:
+        ---   1. If x_i = 1: result = result * a^{2^i} mod N
+        ---   2. Update a^{2^i} -> a^{2^{i+1}} = (a^{2^i})^2 mod N
+        ---
+        --- PARAMETERS:
+            --- XL: n-qubit register for |x> (control qubits)
+            --- OUTLIST: n-qubit register for |result> (initially |1>)
+            --- TMPLIST: n-qubit register for temporary/ancilla (initially |0>)
+            --- NL: n-qubit register for |N>
+            --- ANCLIST: ancilla qubits for ctrl-mod-mult operations
+            --- ABL: BitList for current a^{2^i} (updated each iteration)
+            --- NBL: BitList for N (constant)
+    
+    --- mod-exp
+    eq [mod-exp] : mod-exp(X0 XL, OUTLIST, TMPLIST, NL, ANCLIST, ABL, NBL) = 
+        (mod-exp(XL, OUTLIST, TMPLIST, NL, ANCLIST, bmod*(ABL, ABL, NBL), NBL))
+        x 
+        (sub-mod-exp(X0, OUTLIST, TMPLIST, NL, ANCLIST, ABL, NBL)) .
+
+    --- Base case: single x bit left
+    eq [mod-exp-2] : mod-exp(X0, OUTLIST, TMPLIST, NL, ANCLIST, ABL, NBL) = 
+        sub-mod-exp(X0, OUTLIST, TMPLIST, NL, ANCLIST, ABL, NBL) .
+
+    --- If x_i = 1: result = result * a^{2^i} mod N
+    --- Use one ancilla to copy x_i into a clean control line.
+    eq [sub-mod-exp-2] : sub-mod-exp(X0, OUTLIST, TMPLIST, NL, (ANC ANCLIST), ABL, NBL) = 
+        ctrl-mod-mult-dagger(X0, OUTLIST, TMPLIST, NL, ANCLIST, bmod-inv(ABL, NBL), NBL) x
+        ctrlNSwap(X0, OUTLIST, TMPLIST) x
+        ctrl-mod-mult(X0, OUTLIST, TMPLIST, NL, ANCLIST, ABL, NBL) .
+endfm

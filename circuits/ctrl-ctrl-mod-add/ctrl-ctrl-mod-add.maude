@@ -1,0 +1,34 @@
+load ../ctrl-mod-add/ctrl-mod-add.maude
+load ../../common/vect.maude
+
+fmod CTRL-CTRL-MOD-ADD is
+    pr CTRL-MOD-ADD .
+    pr VECT .
+    pr NAT .
+
+    --- ops signatures:
+    op ctrl-ctrl-mod-add : Nat Nat NatList NatList Nat NatList NatList -> Mat .
+
+    --- variables
+    vars CTRL0 CTRL1 CARRY-OUT ANC0 ANC1 ANC2 : Nat .
+    vars XL YL NL : NatList .
+
+    --- 2-control version of ctrl-mod-add
+    --- ctrl-ctrl-mod-add: |ctrl-0> |ctrl-1> |x> |y> |carry-out> |NL> |ancilla0, ancilla1, ancilla2> -> |ctrl-0> |ctrl-1> |x> |x + y mod N> |carry-out> |N> |ancilla0, ancilla1, ancilla2>
+    eq [c-c-mod-add] : ctrl-ctrl-mod-add(CTRL0, CTRL1, XL, YL, CARRY-OUT, NL, ANC0 ANC1 ANC2) = 
+        CCX(CTRL0, CTRL1, ANC0) x 
+        ctrl-mod-add(ANC0, XL, YL, CARRY-OUT, NL, ANC1 ANC2) x
+        CCX(CTRL0, CTRL1, ANC0) .
+endfm
+
+*** --- ctrl=0,0
+*** red (ctrl-ctrl-mod-add(0, 1, 2 3, 4 5, 6, 7 8, 9 10 11) x vect(0 0) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0)) == vect(0 0) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0) .
+
+*** --- ctrl=0,1
+*** red (ctrl-ctrl-mod-add(0, 1, 2 3, 4 5, 6, 7 8, 9 10 11) x vect(0 1) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0)) == vect(0 1) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0) .
+
+*** --- ctrl=1,0
+*** red (ctrl-ctrl-mod-add(0, 1, 2 3, 4 5, 6, 7 8, 9 10 11) x vect(1 0) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0)) == vect(1 0) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0) .
+
+*** --- ctrl=1,1
+*** red (ctrl-ctrl-mod-add(0, 1, 2 3, 4 5, 6, 7 8, 9 10 11) x vect(1 1) (x) vect(1 0) (x) vect(1 0) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0)) == vect(1 1) (x) vect(1 0) (x) vect(0 1) (x) vect(0) (x) vect(1 1) (x) vect(0 0 0) .
